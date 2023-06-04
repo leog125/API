@@ -5,7 +5,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -16,7 +18,35 @@ var connectionstring = builder.Configuration.GetConnectionString("Default");
 builder.Services.AddDbContext<Test_MAUContext>(x => x.UseSqlServer(connectionstring));
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new() { Title = "TestAPI", Version = "v1" });
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        In = ParameterLocation.Header,
+        Description = "Please enter a valid token",
+        Name = "Authorization",
+        BearerFormat = "JWT",
+        Scheme = "Bearer"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type=ReferenceType.SecurityScheme,
+                    Id="Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+
+});
+
 
 builder.Services.AddAuthentication(); builder.Services.AddAuthentication(options =>
 {
@@ -61,7 +91,7 @@ app.MapPost("/Security/CreateToken", (Test_MAUContext db, User user) =>
         return Results.Ok(result);
     else
         return Results.Unauthorized();
-});
+}).WithTags("Security");
 
 app.MapPost("/Property/CreateProperty", (Test_MAUContext db, OCreateProperty property) =>
 {
@@ -72,7 +102,7 @@ app.MapPost("/Property/CreateProperty", (Test_MAUContext db, OCreateProperty pro
     else
         return Results.Ok(property.Name + " created");
 
-}).RequireAuthorization();
+}).WithTags("Property").RequireAuthorization();
 
 app.MapPost("/Property/AddImageProperty", (Test_MAUContext db, OAddImage image) =>
 {
@@ -80,11 +110,11 @@ app.MapPost("/Property/AddImageProperty", (Test_MAUContext db, OAddImage image) 
     var result = property_.AddImageProperty(image);
     if (result == API.Enumn.EAddImageProperty.Property_Not_Exists)
         return Results.NotFound("Owner not exists");
-    else if(result == API.Enumn.EAddImageProperty.Property_With_Image)
+    else if (result == API.Enumn.EAddImageProperty.Property_With_Image)
         return Results.Conflict("Property with image");
     else
         return Results.Ok("Add Image");
-}).RequireAuthorization();
+}).WithTags("Property").RequireAuthorization();
 
 app.MapPut("/Property/ChangePriceProperty", (Test_MAUContext db, OChangePrice changePrice) =>
 {
@@ -94,7 +124,7 @@ app.MapPut("/Property/ChangePriceProperty", (Test_MAUContext db, OChangePrice ch
         return Results.NotFound("Propertie not exists");
     else
         return Results.Ok("Update price property id: " + changePrice.IdProperty);
-}).RequireAuthorization();
+}).WithTags("Property").RequireAuthorization();
 
 app.MapPut("/Property/UpdateProperty", (Test_MAUContext db, OProperty property) =>
 {
@@ -106,13 +136,13 @@ app.MapPut("/Property/UpdateProperty", (Test_MAUContext db, OProperty property) 
         return Results.NotFound("Owner not exists");
     else
         return Results.Ok("update property id: " + property.IdProperty);
-}).RequireAuthorization();
+}).WithTags("Property").RequireAuthorization();
 
 app.MapPost("/Property/ListPropertybyFilter", (Test_MAUContext db, OPropertyFilter filter) =>
 {
     API.Business.Propertys property_ = new();
     return property_.ListPropertybyFilter(filter);
-}).RequireAuthorization();
+}).WithTags("Property").RequireAuthorization();
 
 
 app.Run();

@@ -14,10 +14,27 @@ namespace TestProject
         }
 
         [Test]
+        public void Create_Property()
+        {
+            API.Business.Propertys property = new();
+            var result = property.CreateProperty(new Entities.OCreateProperty
+            {
+                Name = "test",
+                Address = "test",
+                Price = 0,
+                CodeInternal = "ds",
+                Year = 2000,
+                IdOwner = 1,
+            });
+            Assert.AreEqual(result, API.Enumn.ECreateProperty.Created);
+        }
+
+        [Test]
         public void OwnreNoExist()
         {
             API.Business.Propertys property = new();
-            var result = property.CreateProperty(new Entities.OCreateProperty { 
+            var result = property.CreateProperty(new Entities.OCreateProperty
+            {
                 Name = "test",
                 Address = "test",
                 Price = 0,
@@ -27,5 +44,6 @@ namespace TestProject
             });
             Assert.AreEqual(result, API.Enumn.ECreateProperty.Owner_Not_Exists);
         }
+
     }
 }

@@ -3,6 +3,7 @@ using API.Models;
 using Entities;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
+using System.Net;
 
 namespace API.Business
 {
@@ -12,7 +13,7 @@ namespace API.Business
         public ECreateProperty CreateProperty(OCreateProperty property)
         {
             if (db.Owners.Find(property.IdOwner) == null)
-                return ECreateProperty.Owner_Not_Exists;// "Owner not exists";
+                return ECreateProperty.Owner_Not_Exists;
             else
             {
                 Property property_ = new()
@@ -26,7 +27,7 @@ namespace API.Business
                 };
                 db.Properties.Add(property_);
                 db.SaveChanges();
-                return ECreateProperty.Created;// Results.Ok(property_.Name + " created");
+                return ECreateProperty.Created;
             }
         }
 
@@ -36,6 +37,8 @@ namespace API.Business
                 return EAddImageProperty.Property_Not_Exists;
             else if (db.PropertyImages.Find(image.IdProperty) != null)
                 return EAddImageProperty.Property_With_Image;
+            else if (string.IsNullOrEmpty(image.Image_Base64))
+                return EAddImageProperty.Not_Image;
             else
             {
                 PropertyImage image_ = new()
@@ -72,18 +75,13 @@ namespace API.Business
                 return EUpdateProperty.Owner_Not_Exists;
             else
             {
-                Property property_ = new()
-                {
-                    IdProperty = property.IdProperty,
-                    IdOwner = property.IdOwner,
-                    Name = property.Name,
-                    Address = property.Address,
-                    Price = property.Price,
-                    CodeInternal = property.CodeInternal,
-                    Year = property.Year
-                };
-                db.Properties.Update(property_);
-                db.SaveChanges();
+                Property? Uproperty = db.Properties.Where(x => x.IdProperty == property.IdProperty).FirstOrDefault();
+                Uproperty.Name = property.Name;
+                Uproperty.Address = property.Address;
+                Uproperty.Price = property.Price;
+                Uproperty.CodeInternal = property.CodeInternal;
+                Uproperty.Year = property.Year;
+                db.Properties.Update(Uproperty);
                 return EUpdateProperty.Update_Property;
             }
         }
@@ -91,7 +89,7 @@ namespace API.Business
         public List<OProperty> ListPropertybyFilter(OPropertyFilter filter)
         {
             List<OProperty> result = new List<OProperty>();
-            List<Property> list = db.Properties.Where(x => ((filter.IdProperty > 0 ) && (x.IdProperty == filter.IdProperty)) ||
+            List<Property> list = db.Properties.Where(x => ((filter.IdProperty > 0) && (x.IdProperty == filter.IdProperty)) ||
                                                            ((filter.IdOwner > 0) && (x.IdOwner == filter.IdProperty)) ||
                                                            ((filter.Year > 0) && (x.Year == filter.Year)) ||
                                                            (x.Name.Contains(filter.Name))).ToList();
